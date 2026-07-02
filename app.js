@@ -68,9 +68,8 @@
   function buildRig(mode) {
     const o = [];
     if (mode === "preset") {
-      // Already blessed: crown + ribbon ONLY.
-      o.push(makeOverlay("crown", 0.5, 0.16));
-      o.push(makeOverlay("ribbon", 0.5, 0.9));
+      // Stock preset = just the plain jpeg. Pop-eyes are opt-in via the 👀
+      // button (addEyes() places them dead-center on the cat's eyes).
     } else {
       // Full human rig.
       o.push(makeOverlay("glow", 0.5, 0.44));
@@ -341,6 +340,7 @@
     for (const o of state.overlays) {
       c.save();
       c.globalCompositeOperation = o.blend || "source-over";
+      c.globalAlpha = o.alpha == null ? 1 : o.alpha;
       c.translate(o.x * W, o.y * H);
       c.rotate(o.rot);
       DRAW[o.type](c, o.base * o.scale * W, o);
@@ -539,6 +539,48 @@
     ribbonTxt.textContent = RIBBON_TEXTS[state.ribbon];
     ribbonBtn.setAttribute("aria-pressed", state.ribbon === 1 ? "true" : "false");
     draw();
+  });
+
+  // 👀 pop-eyes: opt-in toggle. On the preset they land dead-center on the
+  // cat's eyes (calibrated to preset-cat-1.jpg); on uploads they go eye-height.
+  function addEyes() {
+    const eyes =
+      state.mode === "preset"
+        ? [
+            makeOverlay("eye", 0.335, 0.52, { scale: 1.12, alpha: 0 }),
+            makeOverlay("eye", 0.658, 0.518, { scale: 1.12, alpha: 0 }),
+          ]
+        : [
+            makeOverlay("eye", 0.4, 0.44, { alpha: 0 }),
+            makeOverlay("eye", 0.6, 0.44, { alpha: 0 }),
+          ];
+    // insert just below the crown (if any) so eyes sit under it, over the photo
+    const at = state.overlays.findIndex((o) => o.type === "crown");
+    if (at >= 0) state.overlays.splice(at, 0, ...eyes);
+    else state.overlays.push(...eyes);
+    // smooth fade-in
+    const t0 = performance.now(), dur = 240;
+    (function step(t) {
+      const k = Math.min(1, (t - t0) / dur);
+      eyes.forEach((e) => (e.alpha = k));
+      draw();
+      if (k < 1) requestAnimationFrame(step);
+    })(t0);
+  }
+
+  document.getElementById("toggleEyes").addEventListener("click", () => {
+    if (!state.img) { toast("add a photo first"); return; }
+    const hasEyes = state.overlays.some((o) => o.type === "eye");
+    if (hasEyes) {
+      state.overlays = state.overlays.filter((o) => o.type !== "eye");
+      if (state.selected != null &&
+          !state.overlays.some((o) => o.id === state.selected)) {
+        state.selected = null;
+      }
+      draw();
+    } else {
+      addEyes();
+    }
   });
 
   document.getElementById("addSparkle").addEventListener("click", () => {
