@@ -25,6 +25,9 @@
     selected: null,
     ribbon: 0,
     background: null,
+    shape: "square", // 'square' | 'circle'
+    view: { x: 0, y: 0, scale: 1 }, // pan/zoom of the base photo inside the frame
+    exportSize: 2048, // 400 | 800 | 2048
   };
 
   let uid = 1;
@@ -820,15 +823,31 @@
   }
 
   function drawSelection(c, o, W, H) {
+    const s = o.base * o.scale * W;
+    const hw = o.hw * s, hh = o.hh * s;
     c.save();
     c.translate(o.x * W, o.y * H);
     c.rotate(o.rot);
-    const s = o.base * o.scale * W;
-    c.strokeStyle = "rgba(255,214,74,0.9)";
-    c.lineWidth = Math.max(1, 0.012 * s);
-    c.setLineDash([0.12 * s, 0.09 * s]);
-    c.strokeRect(-o.hw * s, -o.hh * s, 2 * o.hw * s, 2 * o.hh * s);
+    // dashed outline
+    c.strokeStyle = "rgba(255,214,74,0.95)";
+    c.lineWidth = Math.max(1.5, 0.006 * W);
+    c.setLineDash([0.05 * W, 0.03 * W]);
+    c.strokeRect(-hw, -hh, 2 * hw, 2 * hh);
     c.setLineDash([]);
+    // corner handles
+    const hr = Math.max(4, 0.013 * W);
+    c.fillStyle = "#ffd54a"; c.strokeStyle = "rgba(0,0,0,0.4)"; c.lineWidth = 1;
+    for (const cx of [-hw, hw]) for (const cy of [-hh, hh]) {
+      c.beginPath(); c.arc(cx, cy, hr, 0, 7); c.fill(); c.stroke();
+    }
+    // tappable delete handle (top-right)
+    const dr = Math.max(15, 0.034 * W);
+    c.translate(hw, -hh);
+    c.fillStyle = "#e0304a"; c.beginPath(); c.arc(0, 0, dr, 0, 7); c.fill();
+    c.strokeStyle = "#fff"; c.lineWidth = Math.max(2, 0.006 * W);
+    c.beginPath();
+    c.moveTo(-dr * 0.4, -dr * 0.4); c.lineTo(dr * 0.4, dr * 0.4);
+    c.moveTo(dr * 0.4, -dr * 0.4); c.lineTo(-dr * 0.4, dr * 0.4); c.stroke();
     c.restore();
   }
 
@@ -847,9 +866,7 @@
     }
 
     if (state.img) {
-      // inset the subject when a background is set so it shows behind
-      if (state.background) drawImageContain(c, state.img, W, H, 0.86);
-      else drawImageCover(c, state.img, W, H);
+      drawBaseImage(c, state.img, W, H);
     } else if (opts.placeholder && !state.overlays.length && !state.background) {
       drawPlaceholder(c, W, H);
       return;
@@ -863,7 +880,24 @@
       c.globalAlpha = o.alpha == null ? 1 : o.alpha;
       c.translate(o.x * W, o.y * H);
       c.rotate(o.rot);
+      if (o.flipX) c.scale(-1, 1);
       fn(c, o.base * o.scale * W, o);
+      c.restore();
+    }
+
+    // live circle-crop preview: dim everything outside the export circle
+    if (state.shape === "circle" && opts.preview) {
+      const r = Math.min(W, H) / 2;
+      c.save();
+      c.fillStyle = "rgba(8,5,3,0.6)";
+      c.beginPath();
+      c.rect(0, 0, W, H);
+      c.moveTo(W / 2 + r, H / 2); // break the subpath so no chord line is drawn
+      c.arc(W / 2, H / 2, r, 0, Math.PI * 2, true);
+      c.fill("evenodd");
+      c.strokeStyle = "rgba(255,214,74,0.9)";
+      c.lineWidth = Math.max(2, 0.006 * W);
+      c.beginPath(); c.arc(W / 2, H / 2, r, 0, 7); c.stroke();
       c.restore();
     }
 
@@ -873,9 +907,38 @@
     }
   }
 
+  // base photo drawn with cover-fit (or inset when a background is set),
+  // plus the user's pan/zoom (state.view)
+  function drawBaseImage(c, img, W, H) {
+    const iw = img.naturalWidth, ih = img.naturalHeight;
+    const fit = state.background ? Math.min(W / iw, H / ih) * 0.86 : Math.max(W / iw, H / ih);
+    const sc = fit * state.view.scale;
+    const dw = iw * sc, dh = ih * sc;
+    const cx = W / 2 + state.view.x * W, cy = H / 2 + state.view.y * H;
+    c.drawImage(img, cx - dw / 2, cy - dh / 2, dw, dh);
+  }
+
+  // keep the photo covering the frame (no gaps) while panning/zooming
+  function clampView() {
+    if (!state.img) return;
+    state.view.scale = Math.max(1, Math.min(6, state.view.scale));
+    const iw = state.img.naturalWidth, ih = state.img.naturalHeight;
+    const fit = state.background ? Math.min(LW / iw, LH / ih) * 0.86 : Math.max(LW / iw, LH / ih);
+    const sc = fit * state.view.scale;
+    const dw = iw * sc, dh = ih * sc;
+    if (state.background) {
+      state.view.x = Math.max(-0.5, Math.min(0.5, state.view.x));
+      state.view.y = Math.max(-0.5, Math.min(0.5, state.view.y));
+    } else {
+      const mx = Math.max(0, (dw - LW) / (2 * LW)), my = Math.max(0, (dh - LH) / (2 * LH));
+      state.view.x = Math.max(-mx, Math.min(mx, state.view.x));
+      state.view.y = Math.max(-my, Math.min(my, state.view.y));
+    }
+  }
+
   function draw() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    renderScene(ctx, LW, LH, { placeholder: true, selectedId: state.selected });
+    renderScene(ctx, LW, LH, { placeholder: true, preview: true, selectedId: state.selected });
   }
 
   // coalesce rapid redraws (drag / pinch / animation) into one per frame
@@ -884,6 +947,65 @@
     if (drawQueued) return;
     drawQueued = true;
     requestAnimationFrame(() => { drawQueued = false; draw(); });
+  }
+
+  // ---------------------------------------------------------------- history
+  let history = [], hIndex = -1, commitTimer = null;
+  function snapshot() {
+    return {
+      overlays: state.overlays.map((o) => ({ ...o })),
+      view: { ...state.view },
+      shape: state.shape, background: state.background,
+      ribbon: state.ribbon, mode: state.mode, selected: state.selected,
+    };
+  }
+  function commit() {
+    history = history.slice(0, hIndex + 1);
+    history.push(snapshot());
+    if (history.length > 80) history.shift();
+    hIndex = history.length - 1;
+    updateUndoRedo();
+  }
+  function commitDebounced() { clearTimeout(commitTimer); commitTimer = setTimeout(commit, 350); }
+  function applySnapshot(s) {
+    state.overlays = s.overlays.map((o) => ({ ...o }));
+    state.view = { ...s.view };
+    state.shape = s.shape; state.background = s.background;
+    state.ribbon = s.ribbon; state.mode = s.mode; state.selected = s.selected;
+    syncUI(); draw();
+  }
+  function undo() { if (hIndex > 0) { hIndex--; applySnapshot(history[hIndex]); updateUndoRedo(); } }
+  function redo() { if (hIndex < history.length - 1) { hIndex++; applySnapshot(history[hIndex]); updateUndoRedo(); } }
+  function updateUndoRedo() {
+    const u = document.getElementById("undo"), r = document.getElementById("redo");
+    if (u) u.disabled = hIndex <= 0;
+    if (r) r.disabled = hIndex >= history.length - 1;
+  }
+  function syncUI() {
+    const rt = document.getElementById("ribbonTxt");
+    if (rt) rt.textContent = RIBBON_TEXTS[state.ribbon];
+    document.querySelectorAll(".scChip").forEach((ch) =>
+      ch.classList.toggle("bg--on", !!ch.dataset.bg && ch.dataset.bg === state.background));
+    document.querySelectorAll("[data-shape]").forEach((b) =>
+      b.classList.toggle("seg--on", b.dataset.shape === state.shape));
+  }
+
+  // ---------------------------------------------------------------- selection helpers
+  function selOverlay() { return state.overlays.find((o) => o.id === state.selected); }
+  function deleteSelected() {
+    if (state.selected == null) return false;
+    state.overlays = state.overlays.filter((o) => o.id !== state.selected);
+    state.selected = null; commit(); draw(); return true;
+  }
+  function deleteHandlePos(o) {
+    const s = o.base * o.scale * LW;
+    const lx = o.hw * s, ly = -o.hh * s;
+    const cos = Math.cos(o.rot), sin = Math.sin(o.rot);
+    return {
+      x: o.x * LW + lx * cos - ly * sin,
+      y: o.y * LH + lx * sin + ly * cos,
+      r: Math.max(15, 0.034 * LW),
+    };
   }
 
   // ---------------------------------------------------------------- sizing
@@ -903,11 +1025,10 @@
   window.addEventListener("resize", resize);
   window.addEventListener("orientationchange", () => setTimeout(resize, 150));
 
-  function setAspectFromImage(img) {
-    let ar = img.naturalWidth / img.naturalHeight;
-    ar = Math.max(0.62, Math.min(1.6, ar)); // keep it mobile-sane
-    canvas.style.aspectRatio = ar.toFixed(4);
-    // ResizeObserver fires on the layout change; nudge in case it doesn't.
+  function setAspectFromImage() {
+    // pfp frame is always square; the photo is pan/zoomable inside it
+    canvas.style.aspectRatio = "1 / 1";
+    state.view = { x: 0, y: 0, scale: 1 };
     requestAnimationFrame(resize);
   }
 
@@ -928,8 +1049,8 @@
 
   // ---------------------------------------------------------------- gestures
   const pointers = new Map();
-  let drag = null;  // { id, sx, sy, ox, oy }
-  let pinch = null; // { id, d0, a0, s0, r0 }
+  let gm = null;      // active gesture: {type, ...}
+  let moved = false;  // did anything actually change during this gesture
 
   function getPos(e) {
     const r = canvas.getBoundingClientRect();
@@ -937,69 +1058,102 @@
   }
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
   const ang = (a, b) => Math.atan2(b.y - a.y, b.x - a.x);
+  const mid = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
   canvas.addEventListener("pointerdown", (e) => {
     canvas.setPointerCapture(e.pointerId);
-    pointers.set(e.pointerId, getPos(e));
+    const p = getPos(e);
+    pointers.set(e.pointerId, p);
     if (pointers.size === 1) {
-      const o = hitTest(pointers.get(e.pointerId).x, pointers.get(e.pointerId).y);
-      state.selected = o ? o.id : null;
-      drag = o ? { id: o.id, sx: pointers.get(e.pointerId).x, sy: pointers.get(e.pointerId).y, ox: o.x, oy: o.y } : null;
+      moved = false;
+      // tap the delete handle of the selected sticker?
+      const sel = selOverlay();
+      if (sel) {
+        const h = deleteHandlePos(sel);
+        if (Math.hypot(p.x - h.x, p.y - h.y) <= h.r) { deleteSelected(); gm = null; return; }
+      }
+      const o = hitTest(p.x, p.y);
+      if (o) {
+        state.selected = o.id;
+        gm = { type: "stickerDrag", id: o.id, sx: p.x, sy: p.y, ox: o.x, oy: o.y };
+      } else {
+        state.selected = null;
+        gm = { type: "basePan", sx: p.x, sy: p.y, vx0: state.view.x, vy0: state.view.y };
+      }
       draw();
     } else if (pointers.size === 2) {
-      drag = null;
-      const o = state.selected != null ? state.overlays.find((v) => v.id === state.selected) : null;
-      if (o) {
-        const [a, b] = [...pointers.values()];
-        pinch = { id: o.id, d0: Math.max(1, dist(a, b)), a0: ang(a, b), s0: o.scale, r0: o.rot };
+      const [a, b] = [...pointers.values()];
+      const onSticker = gm && gm.type && gm.type.indexOf("sticker") === 0 && selOverlay();
+      if (onSticker) {
+        const o = selOverlay();
+        gm = { type: "stickerPinch", id: o.id, d0: Math.max(1, dist(a, b)), a0: ang(a, b), s0: o.scale, r0: o.rot };
+      } else {
+        const m = mid(a, b);
+        gm = { type: "basePinch", d0: Math.max(1, dist(a, b)), mx0: m.x, my0: m.y, vs0: state.view.scale, vx0: state.view.x, vy0: state.view.y };
       }
     }
   });
 
   canvas.addEventListener("pointermove", (e) => {
-    if (!pointers.has(e.pointerId)) return;
+    if (!pointers.has(e.pointerId) || !gm) return;
     pointers.set(e.pointerId, getPos(e));
-    if (pinch && pointers.size >= 2) {
-      const [a, b] = [...pointers.values()];
-      const o = state.overlays.find((v) => v.id === pinch.id);
-      if (o) {
-        o.scale = Math.max(0.12, Math.min(6, pinch.s0 * (dist(a, b) / pinch.d0)));
-        o.rot = pinch.r0 + (ang(a, b) - pinch.a0);
-        scheduleDraw();
-      }
-    } else if (drag) {
+    moved = true;
+    const vals = [...pointers.values()];
+    if (gm.type === "stickerPinch" && vals.length >= 2) {
+      const o = selOverlay(); if (o) { o.scale = clamp(gm.s0 * (dist(vals[0], vals[1]) / gm.d0), 0.12, 6); o.rot = gm.r0 + (ang(vals[0], vals[1]) - gm.a0); }
+    } else if (gm.type === "basePinch" && vals.length >= 2) {
+      const m = mid(vals[0], vals[1]);
+      state.view.scale = gm.vs0 * (dist(vals[0], vals[1]) / gm.d0);
+      state.view.x = gm.vx0 + (m.x - gm.mx0) / LW;
+      state.view.y = gm.vy0 + (m.y - gm.my0) / LH;
+      clampView();
+    } else if (gm.type === "stickerDrag") {
+      const p = pointers.get(e.pointerId); const o = selOverlay();
+      if (o) { o.x = gm.ox + (p.x - gm.sx) / LW; o.y = gm.oy + (p.y - gm.sy) / LH; }
+    } else if (gm.type === "basePan") {
       const p = pointers.get(e.pointerId);
-      const o = state.overlays.find((v) => v.id === drag.id);
-      if (o) {
-        o.x = drag.ox + (p.x - drag.sx) / LW;
-        o.y = drag.oy + (p.y - drag.sy) / LH;
-        scheduleDraw();
-      }
+      state.view.x = gm.vx0 + (p.x - gm.sx) / LW;
+      state.view.y = gm.vy0 + (p.y - gm.sy) / LH;
+      clampView();
     }
+    scheduleDraw();
   });
 
   function endPointer(e) {
     pointers.delete(e.pointerId);
-    if (pointers.size < 2) pinch = null;
-    if (pointers.size === 0) drag = null;
+    if (pointers.size === 0) {
+      if (moved && gm) commit();
+      gm = null; moved = false;
+    } else if (pointers.size === 1) {
+      // 2 -> 1 finger: continue smoothly with the remaining pointer
+      const p = [...pointers.values()][0];
+      if (state.selected != null && gm && gm.type && gm.type.indexOf("sticker") === 0) {
+        const o = selOverlay();
+        if (o) gm = { type: "stickerDrag", id: o.id, sx: p.x, sy: p.y, ox: o.x, oy: o.y };
+      } else {
+        gm = { type: "basePan", sx: p.x, sy: p.y, vx0: state.view.x, vy0: state.view.y };
+      }
+    }
   }
   canvas.addEventListener("pointerup", endPointer);
   canvas.addEventListener("pointercancel", endPointer);
 
-  // desktop niceties: wheel = scale, alt/shift+wheel = rotate
+  // desktop: wheel scales the selected sticker (alt/shift = rotate), else zooms the photo
   canvas.addEventListener(
     "wheel",
     (e) => {
-      if (state.selected == null) return;
       e.preventDefault();
-      const o = state.overlays.find((v) => v.id === state.selected);
-      if (!o) return;
-      if (e.altKey || e.shiftKey) {
-        o.rot += (e.deltaY > 0 ? 1 : -1) * 0.08;
-      } else {
-        o.scale = Math.max(0.12, Math.min(6, o.scale * (e.deltaY > 0 ? 0.94 : 1.06)));
-      }
+      const o = selOverlay();
+      if (o) {
+        if (e.altKey || e.shiftKey) o.rot += (e.deltaY > 0 ? 1 : -1) * 0.08;
+        else o.scale = clamp(o.scale * (e.deltaY > 0 ? 0.94 : 1.06), 0.12, 6);
+      } else if (state.img) {
+        state.view.scale = clamp(state.view.scale * (e.deltaY > 0 ? 0.94 : 1.06), 1, 6);
+        clampView();
+      } else return;
       draw();
+      commitDebounced();
     },
     { passive: false }
   );
@@ -1011,7 +1165,8 @@
       state.img = img;
       state.mode = mode;
       buildRig(mode);
-      setAspectFromImage(img);
+      setAspectFromImage();
+      history = []; hIndex = -1; commit();
       draw();
     };
     img.onerror = () => { if (onerror) onerror(); };
@@ -1066,6 +1221,7 @@
     state.ribbon = (state.ribbon + 1) % RIBBON_TEXTS.length;
     ribbonTxt.textContent = RIBBON_TEXTS[state.ribbon];
     ribbonBtn.setAttribute("aria-pressed", state.ribbon === 1 ? "true" : "false");
+    if (state.img) commit();
     draw();
   });
 
@@ -1074,26 +1230,14 @@
   function addEyes() {
     const eyes =
       state.mode === "preset"
-        ? [
-            makeOverlay("eye", 0.335, 0.52, { scale: 1.12, alpha: 0 }),
-            makeOverlay("eye", 0.658, 0.518, { scale: 1.12, alpha: 0 }),
-          ]
-        : [
-            makeOverlay("eye", 0.4, 0.44, { alpha: 0 }),
-            makeOverlay("eye", 0.6, 0.44, { alpha: 0 }),
-          ];
+        ? [makeOverlay("eye", 0.33, 0.52, { scale: 1.12 }), makeOverlay("eye", 0.662, 0.518, { scale: 1.12 })]
+        : [makeOverlay("eye", 0.4, 0.44), makeOverlay("eye", 0.6, 0.44)];
     // insert just below the crown (if any) so eyes sit under it, over the photo
     const at = state.overlays.findIndex((o) => o.type === "crown");
     if (at >= 0) state.overlays.splice(at, 0, ...eyes);
     else state.overlays.push(...eyes);
-    // smooth fade-in
-    const t0 = performance.now(), dur = 240;
-    (function step(t) {
-      const k = Math.min(1, (t - t0) / dur);
-      eyes.forEach((e) => (e.alpha = k));
-      draw();
-      if (k < 1) requestAnimationFrame(step);
-    })(t0);
+    commit();
+    animateIn(eyes);
   }
 
   document.getElementById("toggleEyes").addEventListener("click", () => {
@@ -1101,11 +1245,8 @@
     const hasEyes = state.overlays.some((o) => o.type === "eye");
     if (hasEyes) {
       state.overlays = state.overlays.filter((o) => o.type !== "eye");
-      if (state.selected != null &&
-          !state.overlays.some((o) => o.id === state.selected)) {
-        state.selected = null;
-      }
-      draw();
+      if (state.selected != null && !state.overlays.some((o) => o.id === state.selected)) state.selected = null;
+      commit(); draw();
     } else {
       addEyes();
     }
@@ -1113,27 +1254,21 @@
 
   document.getElementById("addSparkle").addEventListener("click", () => {
     const o = makeOverlay("sparkle", 0.5, 0.4, { scale: 0.9 });
-    state.overlays.push(o);
-    state.selected = o.id;
-    draw();
+    state.overlays.push(o); state.selected = o.id; commit(); animateIn([o]);
   });
   document.getElementById("addPaw").addEventListener("click", () => {
     const o = makeOverlay("paw", 0.5, 0.55);
-    state.overlays.push(o);
-    state.selected = o.id;
-    draw();
+    state.overlays.push(o); state.selected = o.id; commit(); animateIn([o]);
   });
   document.getElementById("delSel").addEventListener("click", () => {
-    if (state.selected == null) { toast("tap a sticker first"); return; }
-    state.overlays = state.overlays.filter((v) => v.id !== state.selected);
-    state.selected = null;
-    draw();
+    if (!deleteSelected()) toast("tap a sticker first");
   });
   document.getElementById("reset").addEventListener("click", () => {
     buildRig(state.mode);
     state.background = null;
+    state.view = { x: 0, y: 0, scale: 1 };
     document.querySelectorAll(".scChip.bg--on").forEach((c) => c.classList.remove("bg--on"));
-    draw();
+    commit(); draw();
   });
 
   // ---------------------------------------------------------------- sticker tray
@@ -1154,13 +1289,16 @@
     const o = makeOverlay(key, 0.5, 0.45);
     state.overlays.push(o);
     state.selected = o.id;
+    commit();
     animateIn([o]);
   }
   function setBackground(key) {
     state.background = state.background === key ? null : key;
+    clampView();
+    commit();
     draw();
     document.querySelectorAll(".scChip").forEach((ch) =>
-      ch.classList.toggle("bg--on", ch.dataset.bg === state.background)
+      ch.classList.toggle("bg--on", !!ch.dataset.bg && ch.dataset.bg === state.background)
     );
   }
 
@@ -1216,17 +1354,61 @@
     selectCat(Object.keys(LIB)[0]);
   })();
 
-  document.getElementById("layerFront").addEventListener("click", () => {
+  function moveLayer(kind) {
     const i = state.overlays.findIndex((o) => o.id === state.selected);
     if (i < 0) { toast("tap a sticker first"); return; }
-    state.overlays.push(state.overlays.splice(i, 1)[0]);
-    draw();
+    const arr = state.overlays, [o] = arr.splice(i, 1);
+    let j = i;
+    if (kind === "front") j = arr.length;
+    else if (kind === "back") j = 0;
+    else if (kind === "forward") j = Math.min(arr.length, i + 1);
+    else if (kind === "backward") j = Math.max(0, i - 1);
+    arr.splice(j, 0, o);
+    commit(); draw();
+  }
+  document.getElementById("layerFront").addEventListener("click", () => moveLayer("front"));
+  document.getElementById("layerBack").addEventListener("click", () => moveLayer("back"));
+  const lf = document.getElementById("layerForward"); if (lf) lf.addEventListener("click", () => moveLayer("forward"));
+  const lb = document.getElementById("layerBackward"); if (lb) lb.addEventListener("click", () => moveLayer("backward"));
+
+  // flip / duplicate selected sticker
+  document.getElementById("flipSel").addEventListener("click", () => {
+    const o = selOverlay(); if (!o) { toast("tap a sticker first"); return; }
+    o.flipX = o.flipX ? 0 : 1; commit(); draw();
   });
-  document.getElementById("layerBack").addEventListener("click", () => {
-    const i = state.overlays.findIndex((o) => o.id === state.selected);
-    if (i < 0) { toast("tap a sticker first"); return; }
-    state.overlays.unshift(state.overlays.splice(i, 1)[0]);
-    draw();
+  document.getElementById("dupSel").addEventListener("click", () => {
+    const o = selOverlay(); if (!o) { toast("tap a sticker first"); return; }
+    const clone = { ...o, id: uid++, x: Math.min(0.95, o.x + 0.06), y: Math.min(0.95, o.y + 0.06) };
+    const i = state.overlays.findIndex((v) => v.id === o.id);
+    state.overlays.splice(i + 1, 0, clone);
+    state.selected = clone.id;
+    commit(); draw();
+  });
+
+  // undo / redo
+  document.getElementById("undo").addEventListener("click", undo);
+  document.getElementById("redo").addEventListener("click", redo);
+  window.addEventListener("keydown", (e) => {
+    const k = e.key.toLowerCase();
+    if ((e.metaKey || e.ctrlKey) && k === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); }
+    else if ((e.metaKey || e.ctrlKey) && k === "y") { e.preventDefault(); redo(); }
+  });
+
+  // crop shape (square / circle)
+  document.querySelectorAll("[data-shape]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (state.shape === btn.dataset.shape) return;
+      state.shape = btn.dataset.shape;
+      syncUI(); commit(); draw();
+    });
+  });
+
+  // export size picker
+  document.querySelectorAll("[data-size]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.exportSize = parseInt(btn.dataset.size, 10);
+      document.querySelectorAll("[data-size]").forEach((b) => b.classList.toggle("seg--on", b === btn));
+    });
   });
 
   // ---------------------------------------------------------------- contract address
@@ -1257,52 +1439,84 @@
     });
   }
 
-  // ---------------------------------------------------------------- export
-  document.getElementById("download").addEventListener("click", () => {
-    if (!state.img) { toast("add a photo first"); return; }
-    const aspect = LW / LH || 0.8;
-    const T = 2048;
-    let EW, EH;
-    if (aspect >= 1) { EW = T; EH = Math.round(T / aspect); }
-    else { EH = T; EW = Math.round(T * aspect); }
-
+  // ---------------------------------------------------------------- export / share
+  // render the composite to a square NxN canvas; circle -> transparent corners
+  function renderExport() {
+    const N = state.exportSize || 2048;
     const off = document.createElement("canvas");
-    off.width = EW;
-    off.height = EH;
+    off.width = N; off.height = N;
     const ectx = off.getContext("2d");
     ectx.setTransform(1, 0, 0, 1, 0, 0);
-    renderScene(ectx, EW, EH, { placeholder: false });
+    renderScene(ectx, N, N, { placeholder: false, preview: false });
+    if (state.shape === "circle") {
+      ectx.globalCompositeOperation = "destination-in";
+      ectx.fillStyle = "#fff";
+      ectx.beginPath();
+      ectx.arc(N / 2, N / 2, N / 2, 0, 7);
+      ectx.fill();
+      ectx.globalCompositeOperation = "source-over";
+    }
+    return off;
+  }
+  function exportBlob() {
+    const off = renderExport();
+    return new Promise((resolve) => {
+      if (off.toBlob) off.toBlob((b) => resolve(b), "image/png");
+      else resolve(dataURLToBlob(off.toDataURL("image/png")));
+    });
+  }
+  function dataURLToBlob(u) {
+    const [head, b64] = u.split(",");
+    const mime = head.match(/:(.*?);/)[1];
+    const bin = atob(b64), arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type: mime });
+  }
+  function triggerDownload(blob) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "popeyes.png";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
 
-    const finish = (blob) => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "popeyes-ify.png";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-      toast("downloaded 😼");
-    };
+  document.getElementById("download").addEventListener("click", async () => {
+    if (!state.img) { toast("add a photo first"); return; }
+    const blob = await exportBlob();
+    if (!blob) { triggerDownload(dataURLToBlob(renderExport().toDataURL("image/png"))); }
+    else triggerDownload(blob);
+    toast("downloaded 😼");
+  });
 
-    if (off.toBlob) {
-      off.toBlob((b) => { if (b) finish(b); else fallbackDownload(off); }, "image/png");
-    } else {
-      fallbackDownload(off);
+  document.getElementById("copyImg").addEventListener("click", async () => {
+    if (!state.img) { toast("add a photo first"); return; }
+    // Safari needs the ClipboardItem promise created synchronously in the gesture
+    try {
+      if (!window.ClipboardItem || !navigator.clipboard || !navigator.clipboard.write) throw new Error("no clipboard image");
+      const item = new ClipboardItem({ "image/png": exportBlob() });
+      await navigator.clipboard.write([item]);
+      toast("image copied — paste into X ✓");
+    } catch (err) {
+      const blob = await exportBlob();
+      triggerDownload(blob);
+      toast("copy unsupported — downloaded instead");
     }
   });
 
-  function fallbackDownload(off) {
-    // Safari fallback if toBlob is unavailable/blocked.
-    const a = document.createElement("a");
-    a.href = off.toDataURL("image/png");
-    a.download = "popeyes-ify.png";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    toast("downloaded 😼");
-  }
+  document.getElementById("shareX").addEventListener("click", async () => {
+    if (!state.img) { toast("add a photo first"); return; }
+    const blob = await exportBlob();
+    triggerDownload(blob);
+    const text =
+      "made my $POPEYES pfp — the cutest pussy on Solana\n\n" +
+      "CA: swA5DdNU2HC9Uab2SEeJ3etuDRz8LvVDPWCgRc3pump";
+    const url = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(text);
+    window.open(url, "_blank", "noopener");
+    toast("image saved — attach it to your post");
+  });
 
   // ---------------------------------------------------------------- boot
+  commit(); // seed history with the empty starting state
+  updateUndoRedo();
   requestAnimationFrame(resize);
 })();

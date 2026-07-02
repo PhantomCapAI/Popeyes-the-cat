@@ -41,8 +41,21 @@
   <!-- The single export canvas -->
   <section class="stage" id="stage">
     <div class="stage__glowframe" aria-hidden="true"></div>
-    <canvas id="board" class="board" width="800" height="1000"></canvas>
-    <p class="stage__hint" id="hint">drag · pinch to scale · twist to rotate</p>
+    <canvas id="board" class="board" width="1000" height="1000"></canvas>
+    <p class="stage__hint" id="hint">drag photo to reposition · pinch to zoom · tap a sticker to select</p>
+  </section>
+
+  <!-- Crop shape + export size -->
+  <section class="panel panel--segs" aria-label="crop and size">
+    <div class="seg" role="group" aria-label="crop shape">
+      <button class="segbtn seg--on" data-shape="square" type="button">▢ Square</button>
+      <button class="segbtn" data-shape="circle" type="button">◯ Circle</button>
+    </div>
+    <div class="seg" role="group" aria-label="export size">
+      <button class="segbtn" data-size="400" type="button">400</button>
+      <button class="segbtn" data-size="800" type="button">800</button>
+      <button class="segbtn seg--on" data-size="2048" type="button">Max</button>
+    </div>
   </section>
 
   <!-- Source picker -->
@@ -79,22 +92,34 @@
     <div class="tray__strip" id="trayStrip"></div>
   </section>
 
-  <!-- Quick actions + layer order -->
-  <section class="panel panel--wrap" aria-label="quick actions">
+  <!-- Sticker actions -->
+  <section class="panel panel--wrap" aria-label="sticker actions">
     <button class="chip" id="toggleEyes" type="button">👀 pop eyes</button>
     <button class="chip" id="addSparkle" type="button">✨ sparkle</button>
     <button class="chip" id="addPaw" type="button">🐾 paw</button>
-    <button class="chip" id="layerFront" type="button">⤒ front</button>
-    <button class="chip" id="layerBack" type="button">⤓ back</button>
+    <button class="chip" id="flipSel" type="button">⇆ flip</button>
+    <button class="chip" id="dupSel" type="button">⧉ duplicate</button>
     <button class="chip" id="delSel" type="button">✕ remove</button>
+  </section>
+
+  <!-- Layer order + history -->
+  <section class="panel panel--wrap" aria-label="layers and history">
+    <button class="chip" id="layerBack" type="button">⤓ to back</button>
+    <button class="chip" id="layerBackward" type="button">↓ back</button>
+    <button class="chip" id="layerForward" type="button">↑ forward</button>
+    <button class="chip" id="layerFront" type="button">⤒ to front</button>
+    <button class="chip" id="undo" type="button" disabled>↶ undo</button>
+    <button class="chip" id="redo" type="button" disabled>↷ redo</button>
     <button class="chip" id="reset" type="button">↺ reset</button>
   </section>
 
-  <!-- The money button -->
+  <!-- Export + share -->
   <section class="panel">
-    <button class="btn btn--dl" id="download" type="button">
-      ⬇ DOWNLOAD PNG
-    </button>
+    <button class="btn btn--dl" id="download" type="button">⬇ DOWNLOAD PNG</button>
+    <div class="share">
+      <button class="btn btn--share" id="copyImg" type="button">⧉ Copy image</button>
+      <button class="btn btn--share" id="shareX" type="button">𝕏 Share to X</button>
+    </div>
   </section>
 
   <footer class="ftr">not financial advice · just a cat</footer>
