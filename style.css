@@ -77,7 +77,6 @@ body::before {
   -webkit-text-stroke: 1px rgba(90, 55, 0, 0.55);
   filter: drop-shadow(0 2px 0 #5a3700) drop-shadow(0 4px 1px rgba(0, 0, 0, 0.6))
     drop-shadow(0 0 22px rgba(255, 170, 50, 0.5));
-  transform: rotate(-1.5deg);
 }
 .logo__ify {
   font-size: 0.62em;
