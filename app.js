@@ -302,7 +302,7 @@
     c.font = `800 ${Math.round(W * 0.05)}px "Trebuchet MS", sans-serif`;
     c.fillText("😇", W / 2, H * 0.4);
     c.font = `800 ${Math.round(W * 0.045)}px "Trebuchet MS", sans-serif`;
-    c.fillText("DROP A PHOTO", W / 2, H * 0.52);
+    c.fillText("CLICK TO POP", W / 2, H * 0.52);
     c.font = `600 ${Math.round(W * 0.03)}px "Trebuchet MS", sans-serif`;
     c.fillStyle = "#8a6e40";
     c.fillText("or use Popeyes", W / 2, H * 0.58);
@@ -487,7 +487,9 @@
       draw();
     };
     img.onerror = () => { if (onerror) onerror(); };
-    img.crossOrigin = "anonymous";
+    // NOTE: no crossOrigin — the preset is same-origin, so it never taints the
+    // canvas (export still works). Setting crossOrigin="anonymous" forces CORS
+    // mode, which iOS Safari fails on for CDN-cached same-origin images.
     img.src = url;
   }
 
