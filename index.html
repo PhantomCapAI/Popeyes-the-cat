@@ -1,0 +1,76 @@
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+/>
+<meta name="theme-color" content="#0a0705" />
+<meta
+  name="description"
+  content="POPEYES-IFY — bless any soul. Church of the holiest cat on SOL."
+/>
+<title>POPEYES-IFY · Bless the Cat</title>
+
+<main class="shrine">
+  <header class="hdr">
+    <h1 class="logo" aria-label="Popeyes-ify">
+      <span class="logo__pop">POPEYES</span><span class="logo__ify">-IFY</span>
+    </h1>
+    <p class="tagline">bless a soul · holiest cat on <span class="sol">SOL</span></p>
+  </header>
+
+  <!-- The single export canvas -->
+  <section class="stage" id="stage">
+    <div class="stage__glowframe" aria-hidden="true"></div>
+    <canvas id="board" class="board" width="800" height="1000"></canvas>
+    <p class="stage__hint" id="hint">drag · pinch to scale · twist to rotate</p>
+  </section>
+
+  <!-- Source picker -->
+  <section class="panel" aria-label="pick a soul">
+    <div
+      class="drop"
+      id="drop"
+      role="button"
+      tabindex="0"
+      aria-label="Upload or drop a photo"
+    >
+      <span class="drop__icon">📷</span>
+      <span class="drop__t">drop a soul</span>
+      <span class="drop__s">tap to upload · jpg / png</span>
+      <input id="file" type="file" accept="image/*" hidden />
+    </div>
+    <button class="btn btn--preset" id="preset" type="button">
+      😼 use the holy cat
+    </button>
+  </section>
+
+  <!-- Ribbon gospel toggle -->
+  <section class="panel panel--row" aria-label="gospel">
+    <span class="lbl">gospel</span>
+    <button class="switch" id="ribbonToggle" type="button" aria-pressed="false">
+      <span class="switch__txt" id="ribbonTxt">ALL HAIL POPEYES</span>
+      <span class="switch__flip">↺</span>
+    </button>
+  </section>
+
+  <!-- Bless-kit: add more relics -->
+  <section class="panel panel--wrap" aria-label="relics">
+    <button class="chip" id="addSparkle" type="button">✨ sparkle</button>
+    <button class="chip" id="addPaw" type="button">🐾 paw</button>
+    <button class="chip" id="delSel" type="button">✕ remove</button>
+    <button class="chip" id="reset" type="button">↺ re-bless</button>
+  </section>
+
+  <!-- The money button -->
+  <section class="panel">
+    <button class="btn btn--dl" id="download" type="button">
+      ⬇ DOWNLOAD PNG
+    </button>
+  </section>
+
+  <footer class="ftr">not financial advice · purely spiritual</footer>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="app.js"></script>
