@@ -23,6 +23,21 @@
     <p class="tagline">THE CUTEST PUSSY ON <span class="sol">SOLANA</span></p>
   </header>
 
+  <!-- Contract address bar -->
+  <div class="cabar">
+    <span class="cabar__lbl">CA</span>
+    <button class="cabar__addr" id="caCopy" type="button" aria-label="Copy contract address">
+      <span class="cabar__mono">swA5DdNU2HC9Uab2SEeJ3etuDRz8LvVDPWCgRc3pump</span>
+      <span class="cabar__copy" aria-hidden="true">⧉</span>
+    </button>
+    <a
+      class="cabar__pump"
+      href="https://pump.fun/coin/swA5DdNU2HC9Uab2SEeJ3etuDRz8LvVDPWCgRc3pump"
+      target="_blank"
+      rel="noopener noreferrer"
+    >pump.fun ↗</a>
+  </div>
+
   <!-- The single export canvas -->
   <section class="stage" id="stage">
     <div class="stage__glowframe" aria-hidden="true"></div>
@@ -58,11 +73,19 @@
     </button>
   </section>
 
-  <!-- add more stickers -->
-  <section class="panel panel--wrap" aria-label="stickers">
+  <!-- Sticker tray (categorized) -->
+  <section class="tray" aria-label="sticker tray">
+    <div class="tray__tabs" id="trayTabs"></div>
+    <div class="tray__strip" id="trayStrip"></div>
+  </section>
+
+  <!-- Quick actions + layer order -->
+  <section class="panel panel--wrap" aria-label="quick actions">
     <button class="chip" id="toggleEyes" type="button">👀 pop eyes</button>
     <button class="chip" id="addSparkle" type="button">✨ sparkle</button>
     <button class="chip" id="addPaw" type="button">🐾 paw</button>
+    <button class="chip" id="layerFront" type="button">⤒ front</button>
+    <button class="chip" id="layerBack" type="button">⤓ back</button>
     <button class="chip" id="delSel" type="button">✕ remove</button>
     <button class="chip" id="reset" type="button">↺ reset</button>
   </section>
