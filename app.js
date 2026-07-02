@@ -6,7 +6,7 @@
   "use strict";
 
   const PRESET_SRC = "assets/preset-cat-1.jpg"; // <-- exact path for the holy cat
-  const RIBBON_TEXTS = ["ALL HAIL POPEYES", "THE HOLIEST CAT ON SOL"];
+  const RIBBON_TEXTS = ["POPEYES", "THE CAT ON SOLANA"];
 
   // ---- overlay type defaults (base = size as fraction of stage width) ----
   const TYPE = {
@@ -302,10 +302,10 @@
     c.font = `800 ${Math.round(W * 0.05)}px "Trebuchet MS", sans-serif`;
     c.fillText("😇", W / 2, H * 0.4);
     c.font = `800 ${Math.round(W * 0.045)}px "Trebuchet MS", sans-serif`;
-    c.fillText("DROP A SOUL", W / 2, H * 0.52);
+    c.fillText("DROP A PHOTO", W / 2, H * 0.52);
     c.font = `600 ${Math.round(W * 0.03)}px "Trebuchet MS", sans-serif`;
     c.fillStyle = "#8a6e40";
-    c.fillText("or summon the holy cat", W / 2, H * 0.58);
+    c.fillText("or use Popeyes", W / 2, H * 0.58);
   }
 
   function drawSelection(c, o, W, H) {
@@ -493,7 +493,7 @@
 
   function handleFile(file) {
     if (!file || !file.type.startsWith("image/")) {
-      toast("that ain't an image, saint");
+      toast("that's not an image");
       return;
     }
     const reader = new FileReader();
@@ -552,7 +552,7 @@
     draw();
   });
   document.getElementById("delSel").addEventListener("click", () => {
-    if (state.selected == null) { toast("tap a relic first"); return; }
+    if (state.selected == null) { toast("tap a sticker first"); return; }
     state.overlays = state.overlays.filter((v) => v.id !== state.selected);
     state.selected = null;
     draw();
@@ -564,7 +564,7 @@
 
   // ---------------------------------------------------------------- export
   document.getElementById("download").addEventListener("click", () => {
-    if (!state.img) { toast("bless a photo first 🙏"); return; }
+    if (!state.img) { toast("add a photo first"); return; }
     const aspect = LW / LH || 0.8;
     const T = 2048;
     let EW, EH;
@@ -587,7 +587,7 @@
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 2000);
-      toast("blessed & downloaded 😼");
+      toast("downloaded 😼");
     };
 
     if (off.toBlob) {
@@ -605,7 +605,7 @@
     document.body.appendChild(a);
     a.click();
     a.remove();
-    toast("blessed & downloaded 😼");
+    toast("downloaded 😼");
   }
 
   // ---------------------------------------------------------------- boot
