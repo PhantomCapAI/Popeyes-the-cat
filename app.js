@@ -28,6 +28,7 @@
     shape: "square", // 'square' | 'circle'
     view: { x: 0, y: 0, scale: 1 }, // pan/zoom of the base photo inside the frame
     exportSize: 2048, // 400 | 800 | 2048
+    liveFlex: false, // Live Flex: stamp validated on-chain stats into the export
   };
 
   let uid = 1;
@@ -885,6 +886,9 @@
       c.restore();
     }
 
+    // Live Flex stamp — rides on the same pipeline so it bakes into the export
+    drawFlexStamp(c, W, H);
+
     // live circle-crop preview: dim everything outside the export circle
     if (state.shape === "circle" && opts.preview) {
       const r = Math.min(W, H) / 2;
@@ -1436,6 +1440,242 @@
         ta.remove();
       }
       toast(ok ? "CA copied ✓" : "copy failed — long-press to copy");
+    });
+  }
+
+  // ================================================================
+  // LIVE FLEX — optional live on-chain stats overlay (purely additive)
+  // Data: Dexscreener public API (client-side fetch, CORS-open, no key).
+  // Confirmed CA (a "popeyes" pool on Solana / pumpswap) supplied by owner.
+  // HARD RULE: only ever render VALIDATED real numbers. On any fetch
+  // failure or token mismatch, hide the stamp and surface "stats
+  // unavailable" — a screenshotted wrong number is worse than no number.
+  // ================================================================
+  const FLEX_CA = "45acsB9DR1pN7me74rxUzp6yrVDRdxpcG2iZXoib8xZW";
+  const FLEX_TTL = 30000; // reuse last-good fetch for ~30s (rapid-toggle guard)
+  // Primary is the tokens endpoint (per spec); the pairs endpoint is a
+  // defensive fallback since the CA is a pool address. Both feed the SAME
+  // validation gate, so neither path can surface an unverified number.
+  const FLEX_ENDPOINTS = [
+    "https://api.dexscreener.com/latest/dex/tokens/" + FLEX_CA,
+    "https://api.dexscreener.com/latest/dex/pairs/solana/" + FLEX_CA,
+  ];
+
+  let flexCache = { data: null, ts: 0 }; // last GOOD snapshot only
+  let flexStatus = "idle"; // 'idle' | 'loading' | 'ok' | 'unavailable'
+  let flexTimer = null;
+  let flexInFlight = false;
+
+  const flexNoteEl = document.getElementById("flexNote");
+  const flexToggle = document.getElementById("flexToggle");
+  const flexTxt = document.getElementById("flexTxt");
+
+  function fmtCompact(n) {
+    const sign = n < 0 ? "-" : "";
+    n = Math.abs(n);
+    if (n >= 1e9) return sign + "$" + (n / 1e9).toFixed(2) + "B";
+    if (n >= 1e6) return sign + "$" + (n / 1e6).toFixed(2) + "M";
+    if (n >= 1e3) return sign + "$" + (n / 1e3).toFixed(1) + "K";
+    return sign + "$" + n.toFixed(0);
+  }
+  function fmtPrice(p) {
+    if (!(p > 0) || !isFinite(p)) return "—";
+    if (p >= 1) return "$" + p.toFixed(2);
+    if (p >= 0.01) return "$" + p.toFixed(4);
+    const m = p.toFixed(12).replace(/0+$/, "").match(/^0\.(0*)(\d{1,4})/);
+    return m ? "$0." + m[1] + m[2] : "$" + p.toPrecision(3);
+  }
+
+  // The anti-fabrication gate: a pair is only usable if it is genuinely a
+  // "popeyes" token on Solana with finite, positive price + market cap.
+  function pickValidPair(json) {
+    let pairs = [];
+    if (json && Array.isArray(json.pairs)) pairs = json.pairs;
+    else if (json && json.pair) pairs = [json.pair];
+    else if (Array.isArray(json)) pairs = json;
+    const ok = pairs.filter(
+      (p) =>
+        p && p.baseToken &&
+        String(p.baseToken.symbol).toLowerCase() === "popeyes" &&
+        p.chainId === "solana"
+    );
+    if (!ok.length) return null;
+    // prefer the pumpswap pool, then the deepest liquidity
+    ok.sort((a, b) => {
+      const ap = a.dexId === "pumpswap" ? 1 : 0, bp = b.dexId === "pumpswap" ? 1 : 0;
+      if (ap !== bp) return bp - ap;
+      return ((b.liquidity && b.liquidity.usd) || 0) - ((a.liquidity && a.liquidity.usd) || 0);
+    });
+    const p = ok[0];
+    const price = parseFloat(p.priceUsd);
+    const mc = Number(p.marketCap != null ? p.marketCap : p.fdv);
+    const h24 = Number(p.priceChange && p.priceChange.h24);
+    if (!isFinite(price) || price <= 0) return null;
+    if (!isFinite(mc) || mc <= 0) return null;
+    if (!isFinite(h24)) return null; // 0 is valid; NaN/undefined is not
+    return { priceUsd: price, marketCap: mc, h24: h24, dexId: p.dexId, symbol: p.baseToken.symbol };
+  }
+
+  async function fetchFlex() {
+    for (const url of FLEX_ENDPOINTS) {
+      try {
+        const ctrl = new AbortController();
+        const to = setTimeout(() => ctrl.abort(), 8000);
+        const res = await fetch(url, { signal: ctrl.signal, headers: { accept: "application/json" } });
+        clearTimeout(to);
+        if (!res.ok) continue;
+        const pick = pickValidPair(await res.json());
+        if (pick) return pick;
+      } catch (e) { /* network/abort/parse — try next endpoint, else null */ }
+    }
+    return null;
+  }
+
+  function updateFlexNote() {
+    if (!flexNoteEl) return;
+    if (!state.liveFlex) { flexNoteEl.textContent = ""; flexNoteEl.className = "flex__note"; return; }
+    if (flexStatus === "ok") {
+      flexNoteEl.textContent = "live stats stamped ✓ · refreshes ~30s";
+      flexNoteEl.className = "flex__note flex__note--ok";
+    } else if (flexStatus === "loading") {
+      flexNoteEl.textContent = "fetching live stats…";
+      flexNoteEl.className = "flex__note";
+    } else {
+      flexNoteEl.textContent = "⚠ stats unavailable — overlay hidden";
+      flexNoteEl.className = "flex__note flex__note--warn";
+    }
+  }
+
+  async function refreshFlex(force) {
+    if (!state.liveFlex) return;
+    const now = Date.now();
+    // fresh cache: reuse without touching the network (rapid-toggle guard)
+    if (!force && flexCache.data && now - flexCache.ts < FLEX_TTL) {
+      flexStatus = "ok"; updateFlexNote(); scheduleDraw(); return;
+    }
+    if (flexInFlight) return;
+    flexInFlight = true;
+    if (!flexCache.data) { flexStatus = "loading"; updateFlexNote(); }
+    const pick = await fetchFlex();
+    flexInFlight = false;
+    if (!state.liveFlex) return; // toggled off mid-flight
+    if (pick) {
+      flexCache = { data: pick, ts: Date.now() };
+      flexStatus = "ok";
+    } else {
+      // failure/mismatch: drop stale data so we never resurrect it, hide stamp
+      flexCache = { data: null, ts: 0 };
+      flexStatus = "unavailable";
+    }
+    updateFlexNote();
+    draw();
+  }
+
+  function goldGrad(c, y, h) {
+    const g = c.createLinearGradient(0, y, 0, y + h);
+    g.addColorStop(0, "#fff3b0"); g.addColorStop(0.45, "#ffd54a");
+    g.addColorStop(0.8, "#e6a100"); g.addColorStop(1, "#a8670c");
+    return g;
+  }
+
+  // gold/glow corner stamp — only drawn when we hold VALIDATED live data
+  function drawFlexStamp(c, W, H) {
+    if (!state.liveFlex || flexStatus !== "ok" || !flexCache.data || !state.img) return;
+    const d = flexCache.data;
+    const mcStr = fmtCompact(d.marketCap);
+    const priceStr = fmtPrice(d.priceUsd);
+    const up = d.h24 >= 0;
+    const chgStr = (up ? "▲ +" : "▼ ") + Math.abs(d.h24).toFixed(1) + "%";
+    const chgCol = up ? "#7cff9b" : "#ff5d5d";
+
+    const padX = 0.032 * W, padY = 0.028 * W;
+    const titleF = 0.03 * W, capF = 0.021 * W, bigF = 0.06 * W, subF = 0.033 * W;
+    const gap = 0.014 * W, lblGap = 0.006 * W;
+
+    c.save();
+    // measure widest line to size the panel
+    c.font = `900 ${titleF}px "Arial Black", Impact, sans-serif`;
+    const titleW = c.measureText("$POPEYES").width;
+    c.font = `700 ${capF}px "Trebuchet MS", sans-serif`;
+    const liveW = c.measureText(" ● LIVE").width;
+    const capMcW = c.measureText("MARKET CAP").width;
+    c.font = `900 ${bigF}px "Arial Black", Impact, sans-serif`;
+    const mcW = c.measureText(mcStr).width;
+    c.font = `800 ${subF}px "Trebuchet MS", sans-serif`;
+    const subW = c.measureText(priceStr + "   " + chgStr).width;
+
+    const contentW = Math.max(titleW + liveW, mcW, subW, capMcW);
+    const boxW = contentW + padX * 2;
+    const boxH = padY * 2 + titleF + gap + capF + lblGap + bigF + gap + subF;
+    const inset = 0.045 * W;
+    const boxX = inset;
+    const boxY = H - inset - boxH; // bottom-left corner
+
+    // panel: dark glass, gold glow, gold hairline border
+    c.shadowColor = "rgba(255,180,60,0.5)"; c.shadowBlur = 0.05 * W; c.shadowOffsetY = 0.008 * W;
+    roundRect(c, boxX, boxY, boxW, boxH, 0.028 * W);
+    c.fillStyle = "rgba(12,8,4,0.84)"; c.fill();
+    c.shadowColor = "transparent"; c.shadowBlur = 0; c.shadowOffsetY = 0;
+    c.lineWidth = Math.max(1, 0.005 * W);
+    c.strokeStyle = "rgba(255,190,70,0.85)";
+    roundRect(c, boxX, boxY, boxW, boxH, 0.028 * W); c.stroke();
+
+    const tx = boxX + padX;
+    let y = boxY + padY;
+    c.textBaseline = "top";
+    c.textAlign = "left";
+
+    // title + live dot
+    c.font = `900 ${titleF}px "Arial Black", Impact, sans-serif`;
+    c.shadowColor = "rgba(255,190,70,0.55)"; c.shadowBlur = 0.03 * W;
+    c.fillStyle = goldGrad(c, y, titleF);
+    c.fillText("$POPEYES", tx, y);
+    c.shadowColor = "transparent"; c.shadowBlur = 0;
+    c.font = `700 ${capF}px "Trebuchet MS", sans-serif`;
+    c.fillStyle = "#7cff9b";
+    c.fillText(" ● LIVE", tx + titleW, y + (titleF - capF) * 0.7);
+    y += titleF + gap;
+
+    // market cap: caption + hero number
+    c.font = `700 ${capF}px "Trebuchet MS", sans-serif`;
+    c.fillStyle = "#c9a95f";
+    c.fillText("MARKET CAP", tx, y);
+    y += capF + lblGap;
+    c.font = `900 ${bigF}px "Arial Black", Impact, sans-serif`;
+    c.shadowColor = "rgba(255,180,60,0.55)"; c.shadowBlur = 0.04 * W;
+    c.fillStyle = goldGrad(c, y, bigF);
+    c.fillText(mcStr, tx, y);
+    c.shadowColor = "transparent"; c.shadowBlur = 0;
+    y += bigF + gap;
+
+    // price + 24h change (green/red by sign)
+    c.font = `800 ${subF}px "Trebuchet MS", sans-serif`;
+    c.fillStyle = "#ffd54a";
+    c.fillText(priceStr, tx, y);
+    const pW = c.measureText(priceStr + "   ").width;
+    c.shadowColor = up ? "rgba(124,255,155,0.45)" : "rgba(255,93,93,0.45)"; c.shadowBlur = 0.02 * W;
+    c.fillStyle = chgCol;
+    c.fillText(chgStr, tx + pW, y);
+    c.restore();
+  }
+
+  if (flexToggle) {
+    flexToggle.addEventListener("click", () => {
+      state.liveFlex = !state.liveFlex;
+      flexToggle.setAttribute("aria-pressed", state.liveFlex ? "true" : "false");
+      flexToggle.classList.toggle("switch--live", state.liveFlex);
+      if (flexTxt) flexTxt.textContent = state.liveFlex ? "stats: ON" : "stats: OFF";
+      if (state.liveFlex) {
+        updateFlexNote();
+        refreshFlex(true);
+        clearInterval(flexTimer);
+        flexTimer = setInterval(() => refreshFlex(true), FLEX_TTL);
+      } else {
+        clearInterval(flexTimer); flexTimer = null;
+        flexStatus = "idle";
+        updateFlexNote();
+        draw();
+      }
     });
   }
 

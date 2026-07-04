@@ -255,6 +255,33 @@ body::before {
   opacity: 0.7;
 }
 
+/* live flex toggle + status note */
+.flex-switch {
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.switch--live {
+  background: linear-gradient(180deg, #7cff9b, #12a150);
+  color: #04240f;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.4),
+    0 0 18px rgba(60, 220, 120, 0.45),
+    0 0 0 1px rgba(210, 255, 225, 0.35) inset;
+}
+.flex__note {
+  margin: -6px 4px 0;
+  min-height: 15px;
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: #b89968;
+}
+.flex__note--ok {
+  color: #7cff9b;
+}
+.flex__note--warn {
+  color: #ff9a8a;
+}
+
 /* relic chips */
 .chip {
   flex: 1 1 auto;

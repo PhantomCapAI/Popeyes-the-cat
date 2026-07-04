@@ -113,6 +113,22 @@
     <button class="chip" id="reset" type="button">↺ reset</button>
   </section>
 
+  <!-- Live Flex — stamp live on-chain stats into the export -->
+  <section class="panel panel--row" aria-label="live flex stats">
+    <span class="lbl">live flex</span>
+    <button
+      class="switch flex-switch"
+      id="flexToggle"
+      type="button"
+      aria-pressed="false"
+      aria-label="Toggle live on-chain stats overlay"
+    >
+      <span class="switch__txt" id="flexTxt">stats: OFF</span>
+      <span class="switch__flip" aria-hidden="true">◍</span>
+    </button>
+  </section>
+  <p class="flex__note" id="flexNote" role="status" aria-live="polite"></p>
+
   <!-- Export + share -->
   <section class="panel">
     <button class="btn btn--dl" id="download" type="button">⬇ DOWNLOAD PNG</button>
