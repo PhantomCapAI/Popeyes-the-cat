@@ -17,10 +17,14 @@
 
 <main class="shrine">
   <header class="hdr">
-    <h1 class="logo" aria-label="Popeyes">
-      <span class="logo__pop">POPEYES</span>
+    <h1 class="hero" aria-label="$POPEYES — the cutest kitty on Solana">
+      <img
+        src="assets/banner.jpg"
+        alt="$POPEYES — Popeyes, the cat on Solana"
+        width="1179"
+        height="372"
+      />
     </h1>
-    <p class="tagline">THE CUTEST PUSSY ON <span class="sol">SOLANA</span></p>
   </header>
 
   <!-- Contract address bar -->
@@ -38,87 +42,41 @@
     >pump.fun ↗</a>
   </div>
 
-  <!-- Live chart + trade -->
-  <section class="market" aria-label="live chart">
-    <div class="market__head">
-      <span class="market__t">$POPEYES · LIVE CHART</span>
+  <!-- Buy / trade $POPEYES — official platform links -->
+  <nav class="buybar" aria-label="Buy $POPEYES">
+    <div class="buybar__row">
       <a
-        class="market__full"
-        href="https://dexscreener.com/solana/swA5DdNU2HC9Uab2SEeJ3etuDRz8LvVDPWCgRc3pump"
-        target="_blank"
-        rel="noopener noreferrer"
-      >open full ↗</a>
-    </div>
-    <div class="market__chart">
-      <iframe
-        title="$POPEYES live price chart"
-        src="https://dexscreener.com/solana/swA5DdNU2HC9Uab2SEeJ3etuDRz8LvVDPWCgRc3pump?embed=1&theme=dark&trades=0&info=0"
-        loading="lazy"
-        allow="clipboard-write"
-      ></iframe>
-    </div>
-    <div class="market__trade">
-      <a
-        class="btn btn--buy"
+        class="buybtn buybtn--pump"
         href="https://pump.fun/coin/swA5DdNU2HC9Uab2SEeJ3etuDRz8LvVDPWCgRc3pump"
         target="_blank"
         rel="noopener noreferrer"
       >
-        <span class="btn__ic" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="22" height="22">
-            <rect width="24" height="24" rx="6" fill="#0f9d63" />
-            <g transform="rotate(-45 12 12)">
-              <rect x="8" y="3.5" width="8" height="17" rx="4" fill="#8fffc8" />
-              <rect x="8" y="12" width="8" height="8.5" rx="4" fill="#ffffff" />
-            </g>
-          </svg>
-        </span>
-        <span class="btn__t">Buy on pump.fun</span>
-        <span class="btn__ar" aria-hidden="true">↗</span>
+        <img class="buybtn__logo" src="assets/logos/pump.png" alt="pump.fun logo" width="40" height="40" />
+        <span class="buybtn__txt">Buy on<br />pump.fun</span>
+        <span class="buybtn__arr" aria-hidden="true">↗</span>
       </a>
       <a
-        class="btn btn--gmgn"
+        class="buybtn buybtn--gmgn"
         href="https://gmgn.ai/r/Popeyes"
         target="_blank"
         rel="noopener noreferrer"
       >
-        <span class="btn__ic" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="22" height="22">
-            <rect width="24" height="24" rx="6" fill="#0e1216" />
-            <line x1="8" y1="4.5" x2="8" y2="19.5" stroke="#3ddc84" stroke-width="1.6" stroke-linecap="round" />
-            <line x1="16" y1="6.5" x2="16" y2="17.5" stroke="#3ddc84" stroke-width="1.6" stroke-linecap="round" />
-            <rect x="5.8" y="8" width="4.4" height="7.5" rx="1.2" fill="#3ddc84" />
-            <rect x="13.8" y="10" width="4.4" height="5.5" rx="1.2" fill="#3ddc84" />
-          </svg>
-        </span>
-        <span class="btn__t">Trade on GMGN</span>
-        <span class="btn__ar" aria-hidden="true">↗</span>
-      </a>
-      <a
-        class="btn btn--jup"
-        href="https://jup.ag/swap/SOL-swA5DdNU2HC9Uab2SEeJ3etuDRz8LvVDPWCgRc3pump?ref=9hcp3ugrnb86"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <span class="btn__ic" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="22" height="22">
-            <defs>
-              <linearGradient id="jup" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stop-color="#c8f76b" />
-                <stop offset="1" stop-color="#25d6c4" />
-              </linearGradient>
-            </defs>
-            <rect width="24" height="24" rx="6" fill="url(#jup)" />
-            <circle cx="12" cy="11" r="4.2" fill="#0b1f22" />
-            <ellipse cx="12" cy="12" rx="8.2" ry="2.7" fill="none" stroke="#0b1f22" stroke-width="1.5" transform="rotate(-20 12 12)" />
-          </svg>
-        </span>
-        <span class="btn__t">Swap on Jupiter</span>
-        <span class="btn__ar" aria-hidden="true">↗</span>
+        <img class="buybtn__logo" src="assets/logos/gmgn.png" alt="GMGN logo" width="40" height="40" />
+        <span class="buybtn__txt">Trade on<br />GMGN</span>
+        <span class="buybtn__arr" aria-hidden="true">↗</span>
       </a>
     </div>
-    <p class="market__ref">contains referral links</p>
-  </section>
+    <a
+      class="buybtn buybtn--jup buybtn--wide"
+      href="https://jup.ag/swap/SOL-swA5DdNU2HC9Uab2SEeJ3etuDRz8LvVDPWCgRc3pump?ref=upzy7fm67bpm"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <img class="buybtn__logo" src="assets/logos/jupiter.png" alt="Jupiter logo" width="40" height="40" />
+      <span class="buybtn__txt">Swap on Jupiter</span>
+      <span class="buybtn__arr" aria-hidden="true">↗</span>
+    </a>
+  </nav>
 
   <!-- The single export canvas -->
   <section class="stage" id="stage">
@@ -205,6 +163,27 @@
   </section>
 
   <footer class="ftr">not financial advice · just a cat</footer>
+
+  <!-- Live chart — very bottom, below everything -->
+  <section class="market" aria-label="live price chart">
+    <div class="market__head">
+      <span class="market__t">$POPEYES · LIVE CHART</span>
+      <a
+        class="market__full"
+        href="https://www.geckoterminal.com/solana/tokens/swA5DdNU2HC9Uab2SEeJ3etuDRz8LvVDPWCgRc3pump"
+        target="_blank"
+        rel="noopener noreferrer"
+      >listed on GeckoTerminal ↗</a>
+    </div>
+    <div class="market__chart">
+      <iframe
+        title="$POPEYES live price chart"
+        src="https://dexscreener.com/solana/swA5DdNU2HC9Uab2SEeJ3etuDRz8LvVDPWCgRc3pump?embed=1&theme=dark&trades=0&info=0"
+        loading="lazy"
+        allow="clipboard-write"
+      ></iframe>
+    </div>
+  </section>
 </main>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>

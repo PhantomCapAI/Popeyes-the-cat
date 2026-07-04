@@ -10,6 +10,20 @@
   --tap: 52px; /* min tap target */
 }
 
+/* ---------- vendored type (shipped in /fonts) ---------- */
+@font-face {
+  font-family: "Oswald";
+  src: url("fonts/Oswald.ttf") format("truetype");
+  font-weight: 300 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Anton";
+  src: url("fonts/Anton.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+
 * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
@@ -24,7 +38,7 @@ body {
 body {
   min-height: 100dvh;
   color: #f6e7cf;
-  font-family: "Trebuchet MS", "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-family: "Oswald", "Trebuchet MS", "Segoe UI", system-ui, -apple-system, sans-serif;
   background:
     radial-gradient(120% 70% at 50% 0%, #2a1a08 0%, var(--bg2) 42%, var(--bg) 78%),
     var(--bg);
@@ -61,15 +75,29 @@ body::before {
 /* ---------- header / 3D bubble logo ---------- */
 .hdr {
   text-align: center;
-  padding: 6px 0 2px;
+  padding: 2px 0;
+}
+/* hero banner */
+.hero {
+  margin: 0;
+  line-height: 0;
+}
+.hero img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 16px;
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.5),
+    0 0 0 1px var(--line);
 }
 .logo {
   margin: 0;
-  font-family: "Arial Black", "Impact", system-ui, sans-serif;
-  font-weight: 900;
-  font-size: clamp(34px, 12vw, 60px);
+  font-family: "Anton", "Arial Black", "Impact", system-ui, sans-serif;
+  font-weight: 400;
+  font-size: clamp(38px, 13vw, 66px);
   line-height: 0.9;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.005em;
   background: linear-gradient(180deg, #fff6cf 0%, var(--gold) 38%, #e6a100 66%, #8a5a00 100%);
   -webkit-background-clip: text;
   background-clip: text;
@@ -389,11 +417,91 @@ body::before {
   white-space: nowrap;
 }
 
-/* ---------- live chart + trade ---------- */
+/* ---------- buy / trade bar (official links) ---------- */
+.buybar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.buybar__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.buybtn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 68px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  text-decoration: none;
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 17px;
+  line-height: 1.06;
+  letter-spacing: 0.01em;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: transform 0.06s ease, filter 0.15s ease;
+}
+.buybtn:hover {
+  filter: brightness(1.04);
+}
+.buybtn:active {
+  transform: translateY(1px);
+}
+.buybtn__logo {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.35);
+}
+.buybtn__txt {
+  flex: 1 1 auto;
+}
+.buybtn__arr {
+  position: absolute;
+  top: 10px;
+  right: 13px;
+  font-size: 18px;
+  font-weight: 700;
+  opacity: 0.66;
+}
+/* wide (Jupiter) — center the group, arrow inline after the label */
+.buybtn--wide {
+  justify-content: center;
+  font-size: 19px;
+}
+.buybtn--wide .buybtn__txt {
+  flex: 0 0 auto;
+}
+.buybtn--wide .buybtn__arr {
+  position: static;
+  margin-left: 4px;
+  align-self: center;
+}
+/* brand-tinted palettes */
+.buybtn--pump {
+  background: linear-gradient(160deg, #93e9a6 0%, #39b866 100%);
+}
+.buybtn--gmgn {
+  background: linear-gradient(160deg, #ffe39a 0%, #f0a92e 100%);
+}
+.buybtn--jup {
+  background: linear-gradient(160deg, #a9e7d6 0%, #63c6e2 100%);
+}
+
+/* ---------- live chart (very bottom) ---------- */
 .market {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin-top: 4px;
 }
 .market__head {
   display: flex;
@@ -402,7 +510,7 @@ body::before {
   padding: 0 2px;
 }
 .market__t {
-  font-weight: 900;
+  font-weight: 700;
   font-size: 13px;
   letter-spacing: 0.08em;
   color: var(--gold);
@@ -434,56 +542,6 @@ body::before {
   width: 100%;
   height: 100%;
   border: 0;
-}
-.market__trade {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.btn--buy,
-.btn--gmgn,
-.btn--jup {
-  flex: 1 1 140px;
-  min-width: 128px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  text-decoration: none;
-  min-height: 52px;
-  color: var(--ink);
-}
-.btn__ic {
-  display: inline-flex;
-  flex: 0 0 auto;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
-}
-.btn__ic svg {
-  display: block;
-}
-.btn__ar {
-  flex: 0 0 auto;
-  font-size: 13px;
-  opacity: 0.65;
-}
-.btn--buy {
-  background: linear-gradient(180deg, #7cff9b, #12a150);
-  box-shadow: 0 2px 0 #0a5c2a, 0 8px 22px rgba(30, 200, 90, 0.3);
-}
-.btn--gmgn {
-  background: linear-gradient(180deg, #fff3b0, #e6a100);
-  box-shadow: 0 2px 0 #7a4d00, 0 8px 22px rgba(255, 160, 40, 0.3);
-}
-.btn--jup {
-  background: linear-gradient(180deg, #8ff5e6, #17a3b8);
-  box-shadow: 0 2px 0 #0a5560, 0 8px 22px rgba(30, 190, 200, 0.3);
-}
-.market__ref {
-  margin: 0;
-  text-align: center;
-  font-size: 10.5px;
-  letter-spacing: 0.06em;
-  color: #6f5a3a;
 }
 
 /* ---------- sticker tray ---------- */
