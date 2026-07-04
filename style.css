@@ -437,11 +437,14 @@ body::before {
 }
 .market__trade {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 .btn--buy,
-.btn--gmgn {
-  flex: 1 1 0;
+.btn--gmgn,
+.btn--jup {
+  flex: 1 1 140px;
+  min-width: 128px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -456,6 +459,10 @@ body::before {
 .btn--gmgn {
   background: linear-gradient(180deg, #fff3b0, #e6a100);
   box-shadow: 0 2px 0 #7a4d00, 0 8px 22px rgba(255, 160, 40, 0.3);
+}
+.btn--jup {
+  background: linear-gradient(180deg, #8ff5e6, #17a3b8);
+  box-shadow: 0 2px 0 #0a5560, 0 8px 22px rgba(30, 190, 200, 0.3);
 }
 .market__ref {
   margin: 0;
