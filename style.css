@@ -448,9 +448,23 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   text-decoration: none;
   min-height: 52px;
   color: var(--ink);
+}
+.btn__ic {
+  display: inline-flex;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+}
+.btn__ic svg {
+  display: block;
+}
+.btn__ar {
+  flex: 0 0 auto;
+  font-size: 13px;
+  opacity: 0.65;
 }
 .btn--buy {
   background: linear-gradient(180deg, #7cff9b, #12a150);
