@@ -1214,6 +1214,10 @@
     });
   });
 
+  // Auto-load the Popeyes cat on first paint so visitors see it immediately
+  // instead of the "CLICK TO POP" placeholder — no need to tap "use Popeyes".
+  loadImageFromURL(PRESET_SRC, "preset", { onerror: () => {} });
+
   // ---------------------------------------------------------------- controls
   const ribbonBtn = document.getElementById("ribbonToggle");
   const ribbonTxt = document.getElementById("ribbonTxt");
