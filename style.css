@@ -10,6 +10,20 @@
   --tap: 52px; /* min tap target */
 }
 
+/* ---------- vendored type (shipped in /fonts) ---------- */
+@font-face {
+  font-family: "Oswald";
+  src: url("fonts/Oswald.ttf") format("truetype");
+  font-weight: 300 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Anton";
+  src: url("fonts/Anton.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+
 * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
@@ -24,7 +38,7 @@ body {
 body {
   min-height: 100dvh;
   color: #f6e7cf;
-  font-family: "Trebuchet MS", "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-family: "Oswald", "Trebuchet MS", "Segoe UI", system-ui, -apple-system, sans-serif;
   background:
     radial-gradient(120% 70% at 50% 0%, #2a1a08 0%, var(--bg2) 42%, var(--bg) 78%),
     var(--bg);
@@ -65,11 +79,11 @@ body::before {
 }
 .logo {
   margin: 0;
-  font-family: "Arial Black", "Impact", system-ui, sans-serif;
-  font-weight: 900;
-  font-size: clamp(34px, 12vw, 60px);
+  font-family: "Anton", "Arial Black", "Impact", system-ui, sans-serif;
+  font-weight: 400;
+  font-size: clamp(38px, 13vw, 66px);
   line-height: 0.9;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.005em;
   background: linear-gradient(180deg, #fff6cf 0%, var(--gold) 38%, #e6a100 66%, #8a5a00 100%);
   -webkit-background-clip: text;
   background-clip: text;
