@@ -389,6 +389,85 @@ body::before {
   white-space: nowrap;
 }
 
+/* ---------- buy / trade bar (official links) ---------- */
+.buybar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.buybar__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.buybtn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 68px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  text-decoration: none;
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 17px;
+  line-height: 1.06;
+  letter-spacing: 0.01em;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: transform 0.06s ease, filter 0.15s ease;
+}
+.buybtn:hover {
+  filter: brightness(1.04);
+}
+.buybtn:active {
+  transform: translateY(1px);
+}
+.buybtn__logo {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.35);
+}
+.buybtn__txt {
+  flex: 1 1 auto;
+}
+.buybtn__arr {
+  position: absolute;
+  top: 10px;
+  right: 13px;
+  font-size: 18px;
+  font-weight: 700;
+  opacity: 0.66;
+}
+/* wide (Jupiter) — center the group, arrow inline after the label */
+.buybtn--wide {
+  justify-content: center;
+  font-size: 19px;
+}
+.buybtn--wide .buybtn__txt {
+  flex: 0 0 auto;
+}
+.buybtn--wide .buybtn__arr {
+  position: static;
+  margin-left: 4px;
+  align-self: center;
+}
+/* brand-tinted palettes */
+.buybtn--pump {
+  background: linear-gradient(160deg, #93e9a6 0%, #39b866 100%);
+}
+.buybtn--gmgn {
+  background: linear-gradient(160deg, #ffe39a 0%, #f0a92e 100%);
+}
+.buybtn--jup {
+  background: linear-gradient(160deg, #a9e7d6 0%, #63c6e2 100%);
+}
+
 /* ---------- sticker tray ---------- */
 .tray {
   display: flex;
