@@ -1,0 +1,6 @@
+# generated meme output — review-only, not source
+out/
+# runtime dedup ledger (local state)
+posted.json
+__pycache__/
+*.pyc
