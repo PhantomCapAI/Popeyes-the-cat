@@ -75,7 +75,18 @@ body::before {
 /* ---------- header / 3D bubble logo ---------- */
 .hdr {
   text-align: center;
-  padding: 6px 0 2px;
+  padding: 2px 0;
+}
+/* hero banner */
+.hero {
+  margin: 0;
+  line-height: 0;
+}
+.hero img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 14px;
 }
 .logo {
   margin: 0;
